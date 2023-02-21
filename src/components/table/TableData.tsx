@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { iColumn, iData, ISourse } from './types'
+import s from './TableData.module.css'
 
 const TableData = () => {
   const [dataSource, setDataSourse] = useState<ISourse[]>([])
@@ -54,22 +55,32 @@ const TableData = () => {
     })
   }
 
-    const handleXLSXExport = () => {
-      const data = [columns.map(item => item.title), ...dataSource.map(item => [item['№'], item.name, item.title, item.email])]
-      const worksheet = XLSX.utils.aoa_to_sheet(data)      
-      worksheet['!cols'] = [{ width: 4 }, { width: 35 }, { width: 35 }, { width: 35 },]
-      const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Support')
-      const xlsxData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
-      const xlsxBlob = new Blob([xlsxData], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      })
-      saveAs(xlsxBlob, 'data.xlsx')
-    }
-    
+  const handleXLSXExport = () => {
+    const data = [
+      columns.map((item) => item.title),
+      ...dataSource.map((item) => [
+        item['№'],
+        item.name,
+        item.title,
+        item.email,
+      ]),
+    ]
+    const worksheet = XLSX.utils.aoa_to_sheet(data)
+    worksheet['!cols'] = data[0].map((_, i) => ({
+      wch: Math.max(...data.map((item) => (item[i] ? item[i].toString().length : 0))),
+    }))
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Support', true)
+    const xlsxData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+    const xlsxBlob = new Blob([xlsxData], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    saveAs(xlsxBlob, 'data.xlsx')
+  }
 
   const handlePDFExport = () => {
     const pdfDoc = new jsPDF()
+    pdfDoc.text('Heading to Document', 15, 10)
     autoTable(pdfDoc, {
       head: [columns.map((heading) => heading.title)],
       body: dataSource.map((tableBody) => [
@@ -84,23 +95,31 @@ const TableData = () => {
 
   return (
     <div>
-      <Table bordered={true} pagination={false} size="small" dataSource={dataSource} columns={columns} />
-      <Button
-        type="primary"
-        onClick={handlePDFExport}
-        icon={<DownloadOutlined />}
-        size={'large'}
-      >
-        Export to PDF
-      </Button>
-      <Button
-        type="primary"
-        onClick={handleXLSXExport}
-        icon={<DownloadOutlined />}
-        size={'large'}
-      >
-        Export to XLSX
-      </Button>
+      <Table
+        bordered={true}
+        pagination={false}
+        size="small"
+        dataSource={dataSource}
+        columns={columns}
+      />
+      <div className={s.table_btn}>
+        <Button
+          type="primary"
+          onClick={handlePDFExport}
+          icon={<DownloadOutlined />}
+          size={'large'}
+        >
+          Export to PDF
+        </Button>
+        <Button
+          type="primary"
+          onClick={handleXLSXExport}
+          icon={<DownloadOutlined />}
+          size={'large'}
+        >
+          Export to XLSX
+        </Button>
+      </div>
     </div>
   )
 }
